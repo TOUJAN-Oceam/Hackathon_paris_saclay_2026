@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Espace Famille - Suivi Léo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .status-ok { color: #198754; font-weight: bold; }
+        .status-alert { color: #dc3545; font-weight: bold; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+        .card-header-custom { background-color: #f8f9fa; border-bottom: 2px solid #e9ecef; }
+        
+        #chat-box {
+            height: 300px; overflow-y: scroll; background-color: #f8f9fa;
+            border: 1px solid #dee2e6; padding: 10px; margin-bottom: 10px;
+        }
+        .msg { padding: 5px 10px; margin-bottom: 5px; border-radius: 10px; font-size: 0.9em; }
+        .msg-me { background-color: #d1e7dd; text-align: right; margin-left: 20%; }
+        .msg-other { background-color: #e2e3e5; text-align: left; margin-right: 20%; }
+        .msg-time { font-size: 0.7em; color: #6c757d; display: block; }
+    </style>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">👨‍👩‍👧 Suivi Léo</a>
+        <div class="d-flex">
+            <span class="navbar-text text-white me-3">Bonjour, {{ user.name }}</span>
+            <a href="/logout" class="btn btn-outline-light btn-sm">Déconnexion</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">État Actuel</h5>
+                    <h1 id="statusText" class="display-4 status-ok">Stable</h1>
+                    <p class="text-muted">Dernière crise : <span id="lastUpdate">...</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-7">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header card-header-custom">ℹ️ Dernière Alerte</div>
+                <div class="card-body d-flex justify-content-between">
+                    <div>
+                        <p class="mb-1"><strong>Date :</strong> <span id="lastSeizureDate">-</span></p>
+                        <p class="mb-1"><strong>Durée :</strong> <span id="lastSeizureDuration">-</span></p>
+                    </div>
+                    <div>
+                        <p class="mb-1"><strong>Intervalle :</strong> <span id="lastSeizureInterval">-</span></p>
+                        <button class="btn btn-sm btn-outline-danger mt-1" onclick="alert('Appel au 15 lancé...')">📞 SOS 15</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
+                    <span>📊 Évolution des Crises</span>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-primary active" onclick="updateChart(7, this)">7J</button>
+                        <button type="button" class="btn btn-outline-primary" onclick="updateChart(30, this)">30J</button>
+                        <button type="button" class="btn btn-outline-primary" onclick="updateChart(90, this)">90J</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div style="height: 200px;">
+                        <canvas id="statsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
+                    <span>📅 Journal Détaillé</span>
+                    <button class="btn btn-sm btn-secondary" onclick="loadHistory()">Actualiser</button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                        <table class="table table-striped table-hover mb-0">
+                            <thead class="table-light sticky-top">
+                                <tr><th>Date</th><th>Durée</th><th>Intensité</th></tr>
+                            </thead>
+                            <tbody id="historyTableBody">
+                                <tr><td colspan="3" class="text-center py-3">Chargement...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header card-header-custom">🔋 Capteur EEG</div>
+                <div class="card-body text-center">
+                    <h3>87%</h3>
+                    <div class="progress">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: 87%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header card-header-custom bg-white text-primary fw-bold">
+                    💬 Messagerie avec Dr. House
+                </div>
+                <div class="card-body">
+                    <div id="chat-box"></div>
+                    <div class="input-group">
+                        <input type="text" id="msgInput" class="form-control" placeholder="Écrire...">
+                        <button class="btn btn-primary" onclick="sendMessage()">Envoyer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 1. CONFIGURATION CHART.JS ---
+    const ctx = document.getElementById('statsChart').getContext('2d');
+    let myChart = new Chart(ctx, {
+        type: 'bar', // Histogramme
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Nombre de crises',
+                data: [],
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1,
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    function updateChart(days, btn) {
+        // Gestion des boutons (visuel)
+        document.querySelectorAll('.btn-group .btn').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+
+        // Appel API Stats
+        fetch(`/api/get_parent_stats?range=${days}`)
+            .then(r => r.json())
+            .then(d => {
+                myChart.data.labels = d.labels;
+                myChart.data.datasets[0].data = d.data;
+                
+                // Change le titre selon la période
+                let label = "Par Jour";
+                if(days === 30) label = "Par Semaine";
+                if(days === 90) label = "Par Mois";
+                myChart.data.datasets[0].label = label;
+                
+                myChart.update();
+            });
+    }
+    // Charger 7J par défaut au démarrage
+    updateChart(7, document.querySelector('.btn-group .btn'));
+
+
+    // --- 2. LIVE STATUS ---
+    setInterval(() => {
+        fetch('/api/get_live_data')
+            .then(r => r.json())
+            .then(data => {
+                const statusText = document.getElementById('statusText');
+                document.getElementById('lastUpdate').innerText = new Date().toLocaleTimeString();
+                if (data.is_seizure) {
+                    statusText.innerText = "⚠️ CRISE DÉTECTÉE";
+                    statusText.className = "display-4 status-alert";
+                } else {
+                    statusText.innerText = "Stable";
+                    statusText.className = "display-4 status-ok";
+                }
+            }).catch(e => console.error(e));
+    }, 1000);
+
+    // --- 3. HISTORIQUE TABLEAU ---
+    function loadHistory() {
+        fetch('/api/get_patient_history')
+            .then(r => r.json())
+            .then(data => {
+                const tbody = document.getElementById('historyTableBody');
+                tbody.innerHTML = ""; 
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="text-center">Aucune donnée.</td></tr>';
+                    return;
+                }
+                // Update Last Seizure Widget
+                if (data.length > 0) {
+                    document.getElementById('lastSeizureDate').innerText = data[0].date;
+                    document.getElementById('lastSeizureDuration').innerText = data[0].duree + " s";
+                    document.getElementById('lastSeizureInterval').innerText = data[0].intervalle;
+                }
+                // Fill Table
+                data.forEach(row => {
+                    let badge = '<span class="badge bg-success">Faible</span>';
+                    if(parseFloat(row.intensite) > 1000000) badge = '<span class="badge bg-warning text-dark">Moyenne</span>';
+                    if(parseFloat(row.intensite) > 2000000) badge = '<span class="badge bg-danger">Forte</span>';
+                    
+                    tbody.innerHTML += `<tr><td><small>${row.date}</small></td><td>${row.duree} s</td><td>${badge}</td></tr>`;
+                });
+            });
+    }
+    loadHistory();
+
+    // --- 4. MESSAGERIE ---
+    const chatBox = document.getElementById('chat-box');
+    const msgInput = document.getElementById('msgInput');
+    function loadMessages() {
+        fetch('/api/get_messages').then(r => r.json()).then(msgs => {
+            chatBox.innerHTML = "";
+            msgs.forEach(m => {
+                const isMe = (m.from === 'parent');
+                chatBox.innerHTML += `<div class="msg ${isMe ? 'msg-me' : 'msg-other'}"><strong>${m.author}</strong><br>${m.content}<span class="msg-time">${m.time}</span></div>`;
+            });
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
+    }
+    function sendMessage() {
+        const txt = msgInput.value;
+        if(!txt) return;
+        fetch('/api/send_message', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ message: txt })
+        }).then(() => { msgInput.value = ""; loadMessages(); });
+    }
+    setInterval(loadMessages, 3000);
+    loadMessages();
+</script>
+</body>
+</html>
