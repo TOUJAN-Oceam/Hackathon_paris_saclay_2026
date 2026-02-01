@@ -6,31 +6,36 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .navbar-brand { font-weight: bold; letter-spacing: 1px; }
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
-        /* Style spécifique Tchat */
+        /* TCHAT STYLE */
         #docChatHistory {
-            height: 300px; 
+            height: 350px; 
             overflow-y: auto; 
-            background: white; 
+            background: #ffffff; 
             border: 1px solid #dee2e6;
             padding: 15px;
             border-radius: 5px;
         }
         .msg-bubble { 
-            padding: 8px 12px; 
-            margin-bottom: 8px; 
-            border-radius: 15px; 
+            padding: 10px 15px; 
+            margin-bottom: 10px; 
+            border-radius: 20px; 
             max-width: 80%;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
+            position: relative;
         }
-        .msg-doc { background-color: #0d6efd; color: white; align-self: flex-end; margin-left: auto; }
-        .msg-fam { background-color: #e9ecef; color: #212529; align-self: flex-start; }
-        
-        /* Style Questionnaires */
-        .q-item { cursor: pointer; transition: 0.2s; }
-        .q-item:hover { background-color: #e2e6ea; }
+        .msg-doc { 
+            background-color: #0d6efd; color: white; 
+            align-self: flex-end; margin-left: auto; 
+            border-bottom-right-radius: 5px;
+        }
+        .msg-fam { 
+            background-color: #e9ecef; color: #212529; 
+            align-self: flex-start; 
+            border-bottom-left-radius: 5px;
+        }
+        .timestamp { font-size: 0.7rem; opacity: 0.7; margin-top: 5px; display: block; }
     </style>
 </head>
 <body>
@@ -49,54 +54,29 @@
             
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 text-primary">🧠 Signal EEG Temps Réel (Patient: Léo D.)</h5>
-                    <span class="badge bg-success" id="connectionStatus">Connecté</span>
+                    <h5 class="mb-0 text-primary fw-bold">🧠 Monitoring EEG Temps Réel</h5>
+                    <div>
+                        <span class="badge bg-secondary me-2">Fichier : <span id="filenameDisplay">En attente...</span></span>
+                        <span class="badge bg-success" id="connectionStatus">Live</span>
+                    </div>
                 </div>
-                <div class="card-body bg-dark" style="height: 400px; position: relative;">
+                <div class="card-body bg-white" style="height: 350px; position: relative;">
                     <canvas id="docChart"></canvas>
-                </div>
-                <div class="card-footer text-muted d-flex justify-content-between">
-                    <small>Fichier source : <span id="filenameDisplay">...</span></small>
-                    <small>Canaux : FP1 (Bleu) / FP2 (Rouge)</small>
                 </div>
             </div>
 
             <div class="card shadow-sm">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0">📋 Suivi QOLIE-31 (Qualité de Vie)</h5>
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold">📈 Analyse d'Évolution (Fréquence des Crises)</h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-primary active" onclick="updateStatsChart(7, this)">7J</button>
+                        <button type="button" class="btn btn-outline-primary" onclick="updateStatsChart(30, this)">30J</button>
+                        <button type="button" class="btn btn-outline-primary" onclick="updateStatsChart(90, this)">90J</button>
+                    </div>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4 border-end">
-                            <div class="list-group list-group-flush" id="qList">
-                                <a href="#" class="list-group-item list-group-item-action active" onclick="showQ(1)">Janvier 2026</a>
-                                <a href="#" class="list-group-item list-group-item-action" onclick="showQ(2)">Décembre 2025</a>
-                                <a href="#" class="list-group-item list-group-item-action" onclick="showQ(3)">Novembre 2025</a>
-                            </div>
-                        </div>
-                        <div class="col-md-8">
-                            <div id="qContent1" class="q-detail">
-                                <h6 class="fw-bold">Rapport Janvier 2026</h6>
-                                <p><strong>Score Global :</strong> <span class="text-success fw-bold">78/100</span> (En hausse)</p>
-                                <ul>
-                                    <li>Énergie/Fatigue : 65/100</li>
-                                    <li>Humeur : 80/100</li>
-                                    <li>Inquiétude crises : 60/100</li>
-                                </ul>
-                                <div class="alert alert-light border">
-                                    <em>"Léo a été moins fatigué ce mois-ci, malgré deux crises nocturnes. L'école se passe bien."</em>
-                                </div>
-                            </div>
-                            <div id="qContent2" class="q-detail d-none">
-                                <h6 class="fw-bold">Rapport Décembre 2025</h6>
-                                <p><strong>Score Global :</strong> 72/100</p>
-                                <div class="alert alert-light border"><em>"Fatigue importante avant les vacances."</em></div>
-                            </div>
-                            <div id="qContent3" class="q-detail d-none">
-                                <h6 class="fw-bold">Rapport Novembre 2025</h6>
-                                <p><strong>Score Global :</strong> 70/100</p>
-                            </div>
-                        </div>
+                    <div style="height: 250px;">
+                        <canvas id="statsChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -105,25 +85,33 @@
         <div class="col-md-4">
             
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-info text-white fw-bold">Actions Rapides</div>
+                <div class="card-header bg-info text-white fw-bold">Dossier Patient : Léo D.</div>
                 <div class="card-body">
-                    <button class="btn btn-outline-danger w-100 mb-2" onclick="alert('Anomalie marquée à ' + new Date().toLocaleTimeString())">🚩 Marquer Anomalie (Timestamp)</button>
-                    <button class="btn btn-outline-primary w-100" onclick="alert('Export PDF en cours...')">📄 Exporter Rapport PDF</button>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Âge : <strong>8 ans</strong></span>
+                        <span>Poids : <strong>28 kg</strong></span>
+                    </div>
+                    <hr class="my-2">
+                    <h6 class="text-muted mb-2">Suivi Qualité de Vie (QOLIE-31)</h6>
+                    
+                    <div id="docQList" class="list-group list-group-flush small" style="max-height: 200px; overflow-y: auto;">
+                        <div class="text-center py-2"><small>Chargement...</small></div>
+                    </div>
                 </div>
             </div>
 
             <div class="card shadow-sm" style="height: 500px;">
                 <div class="card-header bg-warning text-dark fw-bold d-flex justify-content-between">
-                    <span>💬 Famille Dupont</span>
+                    <span>💬 Messagerie Famille</span>
                     <span class="badge bg-light text-dark">En ligne</span>
                 </div>
-                <div class="card-body d-flex flex-column">
+                <div class="card-body d-flex flex-column bg-light">
                     <div id="docChatHistory" class="flex-grow-1 d-flex flex-column">
                         </div>
                     <div class="mt-3">
                         <div class="input-group">
-                            <input type="text" id="docMsgInput" class="form-control" placeholder="Votre message...">
-                            <button class="btn btn-dark" onclick="sendDocMessage()">Envoyer</button>
+                            <input type="text" id="docMsgInput" class="form-control" placeholder="Répondre au parent...">
+                            <button class="btn btn-primary" onclick="sendDocMessage()">Envoyer</button>
                         </div>
                     </div>
                 </div>
@@ -132,115 +120,253 @@
     </div>
 </div>
 
-<script>
-    const ctx = document.getElementById('docChart').getContext('2d');
+<div class="modal fade" id="docQModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title fw-bold">Détails du Bilan</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <h6 id="modalDate" class="text-primary fw-bold mb-3">...</h6>
+        
+        <div class="row text-center mb-3">
+            <div class="col-4">
+                <div class="border rounded p-2 bg-light">
+                    <small class="d-block text-muted">Énergie</small>
+                    <strong class="fs-4" id="modalEnergy">-</strong>/10
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="border rounded p-2 bg-light">
+                    <small class="d-block text-muted">Humeur</small>
+                    <strong class="fs-4" id="modalMood">-</strong>/10
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="border rounded p-2 bg-light">
+                    <small class="d-block text-muted">Inquiétude</small>
+                    <strong class="fs-4" id="modalWorry">-</strong>/10
+                </div>
+            </div>
+        </div>
 
-    // --- PARAMÉTRAGE SYNCHRO ---
+        <div class="mb-3">
+            <label class="fw-bold text-muted small">COMMENTAIRE PARENT :</label>
+            <div class="alert alert-secondary mt-1">
+                <em id="modalComment">...</em>
+            </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    const ctxDoc = document.getElementById('docChart').getContext('2d');
     const FETCH_INTERVAL = 2000;  
     const DISPLAY_REFRESH = 50;   
     const FRAMES_PER_FETCH = FETCH_INTERVAL / DISPLAY_REFRESH; 
 
-    // Buffers
-    let queueFP1 = [], queueFP2 = [], queueStatus = [], queueMeta = [];
-    let showFP1 = [], showFP2 = [], showStatus = [], showLabels = [];
-    let pointsPerFrame = 25; 
-    let globalTime = 0;
+    let queueFP1=[], queueFP2=[], queueStatus=[], queueMeta=[];
+    let showFP1=[], showFP2=[], showStatus=[], showLabels=[];
+    let pointsPerFrame = 25, globalTime = 0;
 
-    // --- CONFIG GRAPHE ---
-    const chart = new Chart(ctx, {
+    const chartDoc = new Chart(ctxDoc, {
         type: 'line',
-        data: {
-            labels: [],
-            datasets: [
-                { label: 'FP1', data: [], borderWidth: 2, pointRadius: 0, segment: { borderColor: ctx => getColor(ctx, 0) } },
-                { label: 'FP2', data: [], borderWidth: 2, pointRadius: 0, segment: { borderColor: ctx => getColor(ctx, 1) } }
-            ]
-        },
+        data: { labels: [], datasets: [
+            { 
+                label: 'FP1', data: [], borderWidth: 2, pointRadius: 0, 
+                borderColor: '#0d6efd', // Bleu Bootstrap Standard
+                segment: { borderColor: ctx => getColor(ctx, 0) } 
+            },
+            { 
+                label: 'FP2', data: [], borderWidth: 2, pointRadius: 0, 
+                borderColor: '#dc3545', // Rouge Bootstrap Standard
+                segment: { borderColor: ctx => getColor(ctx, 1) } 
+            }
+        ]},
         options: { 
             animation: false, responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: true, labels: { color: 'white' } } },
+            plugins: { legend: { display: true, labels: { color: '#333' } } }, // Légende Sombre
             scales: { 
                 x: { 
-                    display: true, type: 'linear', title: { display: true, text: 'Temps (30s)', color: '#aaa' },
-                    grid: { color: '#333' }, ticks: { color: '#aaa', stepSize: 5, callback: v => (v < 0 ? '' : fmtTime(v)) },
-                    min: -30, max: 0
+                    display: true, type: 'linear', 
+                    title: { display: true, text: 'Temps (30s)', color: '#333' }, 
+                    min: -30, max: 0, 
+                    ticks: { color: '#666', stepSize: 5, callback: v => v < 0 ? '' : fmtTime(v) }, // Ticks Gris
+                    grid: { color: '#eee' } // Grille claire
                 }, 
-                y: { display: true, min: -500, max: 500, grid: { color: '#333' }, ticks: { color: '#aaa' } } 
+                y: { 
+                    display: true, 
+                    // AUTO-SCALE
+                    grid: { color: '#eee' }, // Grille claire
+                    ticks: { color: '#666' } // Ticks Gris
+                } 
             }
         }
     });
 
-    // --- BOUCLE RÉSEAU ---
+    // Boucle Réseau
     setInterval(() => {
         fetch('/api/get_live_data').then(r => r.json()).then(d => {
             if(d.fp1 && d.fp1.length > 0) {
-                queueFP1.push(...d.fp1);
-                queueFP2.push(...d.fp2);
+                queueFP1.push(...d.fp1); queueFP2.push(...d.fp2);
                 queueStatus.push(...new Array(d.fp1.length).fill(d.is_seizure));
-                queueMeta.push(...new Array(d.fp1.length).fill(d.filename)); // Juste filename
-
-                let idealSpeed = Math.ceil(d.fp1.length / FRAMES_PER_FETCH);
-                if (queueFP1.length > d.fp1.length * 1.5) pointsPerFrame = Math.ceil(idealSpeed * 1.2);
-                else pointsPerFrame = idealSpeed;
+                queueMeta.push(...new Array(d.fp1.length).fill(d.filename));
+                let ideal = Math.ceil(d.fp1.length / FRAMES_PER_FETCH);
+                pointsPerFrame = (queueFP1.length > d.fp1.length * 1.5) ? Math.ceil(ideal * 1.2) : ideal;
             }
-        }).catch(e => console.error(e));
+        }).catch(e => {
+            document.getElementById('connectionStatus').innerText = "Hors Ligne";
+            document.getElementById('connectionStatus').className = "badge bg-danger";
+        });
     }, FETCH_INTERVAL);
 
-    // --- BOUCLE AFFICHAGE ---
+    // Boucle Affichage
     setInterval(() => {
         if (queueFP1.length > 0) {
-            let eatCount = Math.min(pointsPerFrame, queueFP1.length);
+            let eat = Math.min(pointsPerFrame, queueFP1.length);
+            let chunk1 = queueFP1.splice(0, eat);
+            let chunk2 = queueFP2.splice(0, eat);
+            let chunkS = queueStatus.splice(0, eat);
+            let chunkM = queueMeta.splice(0, eat);
+
+            let dt = (5.0 / FRAMES_PER_FETCH) / eat * chunk1.length;
+            chunk1.forEach(() => { globalTime += (dt/chunk1.length); showLabels.push(globalTime); });
+            showFP1.push(...chunk1); showFP2.push(...chunk2); showStatus.push(...chunkS);
+
+            if(chunkM.length > 0) document.getElementById('filenameDisplay').innerText = chunkM[chunkM.length-1];
+
+            chartDoc.options.scales.x.min = globalTime - 30;
+            chartDoc.options.scales.x.max = globalTime;
             
-            const chunkFP1 = queueFP1.splice(0, eatCount);
-            const chunkFP2 = queueFP2.splice(0, eatCount);
-            const chunkStatus = queueStatus.splice(0, eatCount);
-            const chunkMeta = queueMeta.splice(0, eatCount);
+            if (showFP1.length > 6000) { let d=showFP1.length-6000; showFP1.splice(0,d); showFP2.splice(0,d); showStatus.splice(0,d); showLabels.splice(0,d); }
 
-            const dt = (5.0 / FRAMES_PER_FETCH) / eatCount * chunkFP1.length; 
-
-            chunkFP1.forEach(() => { globalTime += (dt / chunkFP1.length); showLabels.push(globalTime); });
-
-            showFP1.push(...chunkFP1); showFP2.push(...chunkFP2); showStatus.push(...chunkStatus);
-            
-            if(chunkMeta.length > 0) document.getElementById('filenameDisplay').innerText = chunkMeta[chunkMeta.length-1];
-
-            chart.options.scales.x.min = globalTime - 30;
-            chart.options.scales.x.max = globalTime;
-
-            if (showFP1.length > 6000) {
-                const del = showFP1.length - 6000;
-                showFP1.splice(0, del); showFP2.splice(0, del); showStatus.splice(0, del); showLabels.splice(0, del);
-            }
-
-            chart.data.labels = showLabels;
-            chart.data.datasets[0].data = showFP1;
-            chart.data.datasets[1].data = showFP2;
-            chart.update('none');
+            chartDoc.data.labels = showLabels;
+            chartDoc.data.datasets[0].data = showFP1;
+            chartDoc.data.datasets[1].data = showFP2;
+            chartDoc.update('none');
         }
     }, DISPLAY_REFRESH);
 
-    function getColor(ctx, datasetIndex) {
+    function getColor(ctx, idx) {
         const i = ctx.p0DataIndex;
-        if(i >= 0 && i < showStatus.length && showStatus[i]) return datasetIndex === 0 ? '#ff0000' : '#ffff00'; // Crise
-        return datasetIndex === 0 ? '#0d6efd' : '#dc3545'; // Normal (Bleu/Rouge médical standard)
+        if(i >= 0 && i < showStatus.length && showStatus[i]) {
+            // EN CAS DE CRISE
+            // FP1: Rouge (#ff0000)
+            // FP2: Orange (#fd7e14) (Jaune est invisible sur blanc)
+            return idx===0 ? '#ff0000' : '#fd7e14'; 
+        }
+        // CALME
+        return idx===0 ? '#0d6efd' : '#dc3545'; // Bleu / Rouge
     }
-    function fmtTime(v) {
-        const m = Math.floor(v / 60); const s = Math.floor(v % 60); return `${m}m ${s}s`;
-    }
+    function fmtTime(v) { let m=Math.floor(v/60), s=Math.floor(v%60); return `${m}m ${s}s`; }
 </script>
 
 <script>
-    // --- GESTION QUESTIONNAIRES ---
-    function showQ(id) {
-        // Active Tab
-        document.querySelectorAll('.list-group-item').forEach(el => el.classList.remove('active'));
-        event.target.classList.add('active');
-        // Show Content
-        document.querySelectorAll('.q-detail').forEach(el => el.classList.add('d-none'));
-        document.getElementById('qContent' + id).classList.remove('d-none');
+    const ctxStats = document.getElementById('statsChart').getContext('2d');
+    let statsChart = new Chart(ctxStats, {
+        type: 'line', 
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Fréquence des crises',
+                data: [],
+                borderColor: '#198754', 
+                backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                borderWidth: 3,
+                tension: 0.4, 
+                fill: true,
+                pointRadius: 4
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: { 
+                y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                x: { grid: { display: false } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    function updateStatsChart(days, btn) {
+        document.querySelectorAll('.btn-group .btn').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+
+        fetch(`/api/get_parent_stats?range=${days}`)
+            .then(r => r.json())
+            .then(d => {
+                statsChart.data.labels = d.labels;
+                statsChart.data.datasets[0].data = d.data;
+                statsChart.update();
+            });
+    }
+    // Init avec 7 jours
+    updateStatsChart(7, document.querySelector('.btn-group .btn'));
+</script>
+
+<script>
+    // --- QUESTIONNAIRES ---
+    let globalDocQ = [];
+
+    function loadDocQuestionnaires() {
+        fetch('/api/get_questionnaires')
+            .then(r => r.json())
+            .then(data => {
+                globalDocQ = data;
+                const container = document.getElementById('docQList');
+                container.innerHTML = "";
+
+                if(data.length === 0) {
+                    container.innerHTML = "<div class='text-center py-2 text-muted'><small>Aucun bilan disponible.</small></div>";
+                    return;
+                }
+
+                data.forEach((q, index) => {
+                    // Calcul Score
+                    const score = Math.round(((parseInt(q.energy) + parseInt(q.mood) + (10 - parseInt(q.worry))) / 30) * 100);
+                    const dateObj = new Date(q.timestamp);
+                    const dateStr = dateObj.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+
+                    let badgeClass = "bg-success";
+                    if(score < 70) badgeClass = "bg-warning text-dark";
+                    if(score < 50) badgeClass = "bg-danger";
+
+                    container.innerHTML += `
+                        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-2" onclick="openDocQModal(${index})">
+                            <div>
+                                <strong>${dateStr}</strong><br>
+                                <small class="text-muted">Auteur: ${q.author}</small>
+                            </div>
+                            <span class="badge ${badgeClass} rounded-pill">${score}/100</span>
+                        </a>
+                    `;
+                });
+            });
     }
 
-    // --- MESSAGERIE ---
+    window.openDocQModal = function(index) {
+        const q = globalDocQ[index];
+        const dateObj = new Date(q.timestamp);
+        
+        document.getElementById('modalDate').innerText = "Bilan du " + dateObj.toLocaleString('fr-FR');
+        document.getElementById('modalEnergy').innerText = q.energy;
+        document.getElementById('modalMood').innerText = q.mood;
+        document.getElementById('modalWorry').innerText = q.worry;
+        document.getElementById('modalComment').innerText = q.comment ? `"${q.comment}"` : "Aucun commentaire.";
+
+        var myModal = new bootstrap.Modal(document.getElementById('docQModal'));
+        myModal.show();
+    }
+    loadDocQuestionnaires();
+
+    // --- TCHAT ---
     const chatBox = document.getElementById('docChatHistory');
     const msgInput = document.getElementById('docMsgInput');
 
@@ -251,11 +377,11 @@
                 const isMe = (m.from === 'praticien');
                 const bubbleClass = isMe ? 'msg-doc' : 'msg-fam';
                 chatBox.innerHTML += `
-                    <div class="d-flex flex-column">
+                    <div class="d-flex flex-column" style="width:100%">
                         <div class="msg-bubble ${bubbleClass}">
                             <strong>${m.author}</strong> <br> ${m.content}
+                            <span class="timestamp text-end">${m.time}</span>
                         </div>
-                        <small class="text-muted mb-2" style="align-self: ${isMe ? 'flex-end' : 'flex-start'}">${m.time}</small>
                     </div>`;
             });
             chatBox.scrollTop = chatBox.scrollHeight;
@@ -271,11 +397,8 @@
         }).then(() => { msgInput.value = ""; loadDocMessages(); });
     }
     
-    // Auto-refresh chat
     setInterval(loadDocMessages, 3000);
     loadDocMessages();
-    
-    // Envoi avec Entrée
     msgInput.addEventListener("keypress", function(e) { if (e.key === "Enter") sendDocMessage(); });
 </script>
 

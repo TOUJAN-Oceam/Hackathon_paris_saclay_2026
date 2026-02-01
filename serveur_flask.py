@@ -8,6 +8,7 @@ import datetime
 import csv  # Nécessaire pour le CSV
 import joblib
 from collections import deque
+import json
 
 # --- A AJOUTER DANS LES VARIABLES GLOBALES ---
 # On garde en mémoire les 3 dernières prédictions
@@ -44,7 +45,9 @@ LAST_SEIZURE_INFO = {
 
 model = joblib.load('model_eeg.pkl')
 
-
+QUESTIONNAIRES_DIR = 'questionnaires_data'
+if not os.path.exists(QUESTIONNAIRES_DIR):
+    os.makedirs(QUESTIONNAIRES_DIR)
 
 
 # --- A AJOUTER AVANT detect_seizure_advanced ---
@@ -124,14 +127,14 @@ def load_user(user_id):
 DATA_DIR = 'dataset_LIVE'
 FILES_LIST = sorted(glob.glob(os.path.join(DATA_DIR, '*.npy')))
 
-# --- AJOUTE CES 3 LIGNES POUR VÉRIFIER ---
+
 print(f"--- DÉBUG ---")
 print(f"Dossier visé : {os.path.abspath(DATA_DIR)}")
 print(f"Fichiers trouvés : {len(FILES_LIST)}")
 print(f"----------------------------------")
 
 current_file_index = 0
-CSV_FILE = 'historique_crises.csv'
+CSV_FILE = 'historique_crises_dense.csv'
 
 
 # Initialisation du CSV si inexistant
@@ -455,6 +458,44 @@ def get_parent_stats():
     data = list(counts.values())
     
     return jsonify({"labels": labels, "data": data})
+
+
+# --- GESTION QUESTIONNAIRES ---
+
+@app.route('/api/save_questionnaire', methods=['POST'])
+@login_required
+def save_questionnaire():
+    try:
+        data = request.json
+        # On ajoute des métadonnées
+        data['timestamp'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        data['author'] = current_user.name
+        
+        # Nom de fichier unique
+        filename = f"q_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        filepath = os.path.join(QUESTIONNAIRES_DIR, filename)
+        
+        with open(filepath, 'w') as f:
+            json.dump(data, f)
+            
+        return jsonify({"status": "ok"})
+    except Exception as e:
+        print(f"Erreur sauvegarde questionnaire : {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/get_questionnaires')
+@login_required
+def get_questionnaires():
+    qs = []
+    if os.path.exists(QUESTIONNAIRES_DIR):
+        files = sorted(glob.glob(os.path.join(QUESTIONNAIRES_DIR, '*.json')), reverse=True)
+        for f in files:
+            try:
+                with open(f, 'r') as file:
+                    qs.append(json.load(file))
+            except: pass
+    return jsonify(qs)
+
 
 
 

@@ -26,7 +26,10 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container-fluid">
         <a class="navbar-brand" href="#">👨‍👩‍👧 Suivi Léo</a>
-        <div class="d-flex">
+        <div class="d-flex align-items-center">
+            <button class="btn btn-warning btn-sm fw-bold me-3" data-bs-toggle="modal" data-bs-target="#qModal">
+                📝 Remplir Bilan
+            </button>
             <span class="navbar-text text-white me-3">Bonjour, {{ user.name }}</span>
             <a href="/logout" class="btn btn-outline-light btn-sm">Déconnexion</a>
         </div>
@@ -40,7 +43,7 @@
                 <div class="card-body">
                     <h5 class="card-title text-muted">État Actuel</h5>
                     <h1 id="statusText" class="display-4 status-ok">Stable</h1>
-                    <p class="text-muted">Dernière crise : <span id="lastUpdate">...</span></p>
+                    <p class="text-muted">Dernière mise à jour : <span id="lastUpdate">...</span></p>
                 </div>
             </div>
         </div>
@@ -64,7 +67,7 @@
 
             <div class="card shadow-sm mb-4">
                 <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
-                    <span>📊 Évolution des Crises</span>
+                    <span>📈 Évolution des Crises</span>
                     <div class="btn-group btn-group-sm" role="group">
                         <button type="button" class="btn btn-outline-primary active" onclick="updateChart(7, this)">7J</button>
                         <button type="button" class="btn btn-outline-primary" onclick="updateChart(30, this)">30J</button>
@@ -124,32 +127,132 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="qModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title text-dark fw-bold">Bilan Hebdomadaire (QOLIE-31 Simplifié)</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="qForm">
+            <div class="mb-3">
+                <label class="form-label">1. Niveau d'Énergie (0=Épuisé, 10=En forme)</label>
+                <input type="range" class="form-range" min="0" max="10" id="qEnergy" oninput="this.nextElementSibling.value = this.value">
+                <output>5</output>/10
+            </div>
+            <div class="mb-3">
+                <label class="form-label">2. Humeur Globale (0=Triste, 10=Joyeux)</label>
+                <input type="range" class="form-range" min="0" max="10" id="qMood" oninput="this.nextElementSibling.value = this.value">
+                <output>5</output>/10
+            </div>
+            <div class="mb-3">
+                <label class="form-label">3. Inquiétude face aux crises (0=Zen, 10=Panique)</label>
+                <input type="range" class="form-range" min="0" max="10" id="qWorry" oninput="this.nextElementSibling.value = this.value">
+                <output>5</output>/10
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Commentaire libre (Sommeil, École...)</label>
+                <textarea class="form-control" id="qComment" rows="3" placeholder="Rien à signaler..."></textarea>
+            </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-primary" onclick="submitQ()">Envoyer au Médecin</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    // --- 1. CONFIGURATION CHART.JS ---
+    // --- 1. CONFIGURATION CHART.JS (TYPE COURBE) ---
     const ctx = document.getElementById('statsChart').getContext('2d');
     let myChart = new Chart(ctx, {
-        type: 'bar', // Histogramme
+        type: 'line', // <--- CHANGEMENT ICI : 'line' au lieu de 'bar'
         data: {
             labels: [],
             datasets: [{
                 label: 'Nombre de crises',
                 data: [],
-                backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                borderColor: 'rgba(54, 162, 235, 1)',
-                borderWidth: 1,
-                borderRadius: 5
+                borderColor: '#0d6efd',         // Couleur de la ligne (Bleu Bootstrap)
+                backgroundColor: 'rgba(13, 110, 253, 0.1)', // Remplissage léger sous la courbe
+                borderWidth: 3,                 // Épaisseur de la ligne
+                tension: 0.4,                   // <--- LISSAGE : Donne l'effet courbe
+                fill: true,                     // <--- REMPLISSAGE : Colorie sous la courbe
+                pointRadius: 4,                 // Taille des points
+                pointHoverRadius: 6
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                y: { 
+                    beginAtZero: true, 
+                    ticks: { stepSize: 1 } // Pas de demi-crise possible
+                },
+                x: {
+                    grid: { display: false } // Enlève la grille verticale pour faire plus propre
+                }
             },
             plugins: { legend: { display: false } }
         }
     });
+
+    
+    function submitQ() {
+        // 1. Récupération des valeurs
+        const energyVal = document.getElementById('qEnergy').value;
+        const moodVal = document.getElementById('qMood').value;
+        const worryVal = document.getElementById('qWorry').value;
+        const commentVal = document.getElementById('qComment').value;
+
+        // 2. Création de l'objet à envoyer
+        const data = {
+            energy: energyVal,
+            mood: moodVal,
+            worry: worryVal,
+            comment: commentVal
+        };
+
+        // 3. Envoi au serveur Flask
+        fetch('/api/save_questionnaire', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                throw new Error("Erreur serveur");
+            }
+        })
+        .then(d => {
+            // Succès
+            alert("✅ Bilan envoyé au Dr. House !");
+            
+            // Fermer la modale (nécessite Bootstrap JS)
+            const modalEl = document.getElementById('qModal');
+            const modal = bootstrap.Modal.getInstance(modalEl); // Récupère l'instance existante
+            if (modal) {
+                modal.hide();
+            } else {
+                // Si l'instance n'est pas trouvée (cas rare), on ferme brutalement
+                document.querySelector('.btn-close').click();
+            }
+
+            // Reset du formulaire
+            document.getElementById('qForm').reset();
+        })
+        .catch(error => {
+            console.error(error);
+            alert("❌ Erreur lors de l'envoi. Vérifiez que le serveur Python tourne bien.");
+        });
+    }
 
     function updateChart(days, btn) {
         // Gestion des boutons (visuel)

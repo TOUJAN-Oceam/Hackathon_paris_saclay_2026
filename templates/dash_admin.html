@@ -232,8 +232,7 @@
 
         function updateDashboard(d) {
             // Indicateurs
-            const iaRaw = d.is_seizure_raw ? "🔴" : "🟢";
-            const info = ` [IA Brut:${iaRaw} | Final:${d.is_seizure ? "CRISE" : "CALME"} | Vérité:${d.debug_label}]`;
+            const info = ` [Final:${d.is_seizure ? "CRISE" : "CALME"} | Vérité:${d.debug_label}]`;
             
             const fDisplay = document.getElementById('filenameDisplay');
             fDisplay.innerText = d.filename + info;
