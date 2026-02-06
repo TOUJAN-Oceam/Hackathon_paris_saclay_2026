@@ -9,6 +9,12 @@
 ## Contexte
 Le projet gitlab que vous voyez ici est le fruit de 40h de développement dans le cadre du **Hackathon Paris-Saclay SynaPCS 2026**.
 
+La problématique à laquelle nous devions répondre était la suivante : Développer des méthodes moins contraignantes et non invasives (imagerie MRI, EEG, digital device...) pour montrer l'efficacité des médicaments/la réponse au traitement dans les épilepsies développementales rares pédiatriques.
+
+Pour plus d'information, vous pouvez vous référer à (https://www.linkedin.com/company/start-in-saclay/, insérer lien linkedin quand le post de start-in-saclay aura été fait)
+
+
+
 
 ## Installation
 
